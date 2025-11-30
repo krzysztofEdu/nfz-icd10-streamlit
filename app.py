@@ -284,6 +284,7 @@ def main():
         min_value=1,
         max_value=200,
         value=25,
+        help="Limity wyników dziają dal wartości poniżej 25",
         step=1
     )
 
