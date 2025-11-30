@@ -85,15 +85,16 @@ def clear_filters():
 
 
 # ----------------------------------------------------
-# FUNKCJA: pobieranie danych z NFZ (z paskami postępu)
+# FUNKCJA: pobieranie danych z NFZ (z paskami postępu) + CACHE
 # ----------------------------------------------------
+@st.cache_data(show_spinner=False)
 def pobierz_icd10_nfz(szuk, rok=2019, limit=25):
     """
     Pobiera benefity NFZ → tabele → dane ICD-10.
     Zwraca:
       - df_allICD  (bez duplikatów)
       - df_errors  (lista błędów w jednej tabeli)
-    Pokazuje paski postępu w Streamlit.
+    Używa cache (st.cache_data) – dla tych samych parametrów wynik jest buforowany.
     """
 
     pd.set_option("display.max_colwidth", 100)
@@ -295,9 +296,9 @@ def main():
 
     szuk = st.sidebar.text_input(
         "Fragment nazwy świadczenia (benefit):",
-        value=" ",
-        placeholder="np. staw, poród, kardio…",
-        help="Wpisz fragment nazwy świadczenia, np. 'staw', 'poród', 'kardio'."
+        value="rozrodcz",
+        placeholder="np. rozrodcz, poród, kardio…",
+        help="Wpisz fragment nazwy świadczenia, np. 'rozrodcz', 'poród', 'kardio'."
     )
 
     rok = st.sidebar.number_input(
@@ -313,7 +314,6 @@ def main():
         min_value=1,
         max_value=200,
         value=25,
-        help="Zalecane jest nie zwiększanie tej wartości. API NFZ ma z tym problem",
         step=1
     )
 
@@ -626,8 +626,8 @@ def main():
         st.write(
             "Aplikacja wysyła zapytania do API NFZ (JGP). "
             "Przy większej liczbie świadczeń pobieranie może potrwać kilka–kilkanaście sekund. "
-            "Paski postępu w środku funkcji pokazują postęp etapów index-of-tables oraz ICD-10, "
-            "a blok statusu nad główną częścią opisuje kroki procesu i czas wykonania."
+            "Cache skraca czas kolejnych pobrań dla tych samych parametrów, "
+            "a paski postępu pokazują tylko pierwsze, „prawdziwe” pobranie."
         )
 
 
