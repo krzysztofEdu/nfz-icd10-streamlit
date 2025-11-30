@@ -318,7 +318,14 @@ def main():
     )
 
     st.sidebar.markdown("---")
+
+    # najpierw przycisk pobierania → definiuje zmienną uruchom
     uruchom = st.sidebar.button("🚀 Pobierz dane z NFZ")
+
+    # potem przycisk czyszczenia cache
+    if st.sidebar.button("🗑 Wyczyść cache danych"):
+        st.cache_data.clear()
+        st.sidebar.success("Cache wyczyszczony! Dane zostaną pobrane ponownie przy następnym zapytaniu.")
 
     # Utrzymanie wyników i czasu w session_state
     if "df_icd" not in st.session_state:
