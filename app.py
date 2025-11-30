@@ -52,8 +52,36 @@ st.markdown("""
             letter-spacing: 0.05em;
             color: #6b7280;
         }
+        .filter-banner {
+            padding: 0.6rem 0.9rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            background-color: #f3f4f6;
+            font-size: 0.9rem;
+            margin-bottom: 0.6rem;
+        }
+        .filter-badge {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            margin-right: 0.4rem;
+            border-radius: 999px;
+            background-color: #e5e7eb;
+            font-size: 0.8rem;
+        }
     </style>
 """, unsafe_allow_html=True)
+
+
+# ----------------------------------------------------
+# CALLBACK: czyszczenie filtrów
+# ----------------------------------------------------
+def clear_filters():
+    # czyścimy pola inputów
+    st.session_state["filt_code_input"] = ""
+    st.session_state["filt_name_input"] = ""
+    # czyścimy też wartości zastosowanych filtrów
+    st.session_state["filt_code_applied"] = ""
+    st.session_state["filt_name_applied"] = ""
 
 
 # ----------------------------------------------------
@@ -267,9 +295,9 @@ def main():
 
     szuk = st.sidebar.text_input(
         "Fragment nazwy świadczenia (benefit):",
-        value="",
-        placeholder="np. poród, kardio, kolan ...",
-        help="Np. 'rozrodcz', 'poród', 'kardio' itp."
+        value="rozrodcz",
+        placeholder="np. rozrodcz, poród, kardio…",
+        help="Wpisz fragment nazwy świadczenia, np. 'rozrodcz', 'poród', 'kardio'."
     )
 
     rok = st.sidebar.number_input(
@@ -285,7 +313,6 @@ def main():
         min_value=1,
         max_value=200,
         value=25,
-        help="Limity wyników dziają dal wartości poniżej 25",
         step=1
     )
 
@@ -379,52 +406,79 @@ def main():
             # ---------------- FILTRY ----------------
             st.markdown("### Filtry")
 
-            # Przygotowanie session_state dla filtrów
-            if "filt_code" not in st.session_state:
-                st.session_state["filt_code"] = ""
-            if "filt_name" not in st.session_state:
-                st.session_state["filt_name"] = ""
+            # inicjalizacja zastosowanych filtrów w session_state
+            if "filt_code_applied" not in st.session_state:
+                st.session_state["filt_code_applied"] = ""
+            if "filt_name_applied" not in st.session_state:
+                st.session_state["filt_name_applied"] = ""
 
-            col1, col2, col3 = st.columns([1, 1, 0.6])
+            col1, col2, col3 = st.columns([1, 1, 1])
 
             with col1:
-                st.session_state["filt_code"] = st.text_input(
+                filt_code = st.text_input(
                     "Filtr po disease-code (zawiera):",
-                    value=st.session_state["filt_code"],
-                    key="filt_code_input"
+                    key="filt_code_input",
+                    placeholder="np. O80, C18…",
                 )
 
             with col2:
-                st.session_state["filt_name"] = st.text_input(
+                filt_name = st.text_input(
                     "Filtr po disease-name (zawiera):",
-                    value=st.session_state["filt_name"],
-                    key="filt_name_input"
+                    key="filt_name_input",
+                    placeholder="np. poród, nowotwór…",
                 )
 
             with col3:
-                if st.button("🧹 Wyczyść filtry"):
-                    st.session_state["filt_code"] = ""
-                    st.session_state["filt_name"] = ""
-                    st.rerun()
+                st.write("")
+                st.write("")
+                if st.button("✅ Zastosuj filtry"):
+                    st.session_state["filt_code_applied"] = st.session_state.get("filt_code_input", "")
+                    st.session_state["filt_name_applied"] = st.session_state.get("filt_name_input", "")
+                st.button("🧹 Wyczyść filtry", on_click=clear_filters)
 
-            # stosujemy filtry
+            # ---------------- ZASTOSOWANIE FILTRÓW ----------------
             df_filtr = df_icd.copy()
 
-            if st.session_state["filt_code"] and "disease-code" in df_filtr.columns:
+            code_filter = st.session_state.get("filt_code_applied", "")
+            name_filter = st.session_state.get("filt_name_applied", "")
+
+            if code_filter and "disease-code" in df_filtr.columns:
                 df_filtr = df_filtr[
-                    df_filtr["disease-code"].astype(str).str.contains(
-                        st.session_state["filt_code"], case=False, na=False
-                    )
+                    df_filtr["disease-code"]
+                    .astype(str)
+                    .str.contains(code_filter, case=False, na=False)
                 ]
 
-            if st.session_state["filt_name"] and "disease-name" in df_filtr.columns:
+            if name_filter and "disease-name" in df_filtr.columns:
                 df_filtr = df_filtr[
-                    df_filtr["disease-name"].astype(str).str.contains(
-                        st.session_state["filt_name"], case=False, na=False
-                    )
+                    df_filtr["disease-name"]
+                    .astype(str)
+                    .str.contains(name_filter, case=False, na=False)
                 ]
 
-            st.write(f"Liczba unikalnych rekordów ICD-10 (po filtrach): **{len(df_filtr)}**")
+            # ---------------- BANEREK Z AKTYWNYMI FILTRAMI ----------------
+            if code_filter or name_filter:
+                badges = []
+                if code_filter:
+                    badges.append(f'<span class="filter-badge">disease-code zawiera: <b>{code_filter}</b></span>')
+                if name_filter:
+                    badges.append(f'<span class="filter-badge">disease-name zawiera: <b>{name_filter}</b></span>')
+                badges_html = " ".join(badges)
+                st.markdown(
+                    f'<div class="filter-banner">'
+                    f'<b>Aktywne filtry:</b> {badges_html}'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    '<div class="filter-banner"><b>Aktywne filtry:</b> brak – wyświetlane są wszystkie rekordy.</div>',
+                    unsafe_allow_html=True
+                )
+
+            st.write(
+                f"Liczba unikalnych rekordów ICD-10 (po filtrach): **{len(df_filtr)}**"
+            )
             st.dataframe(df_filtr, use_container_width=True)
 
             # ---- POBIERANIE CSV / EXCEL ----
