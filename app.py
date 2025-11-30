@@ -313,6 +313,7 @@ def main():
         min_value=1,
         max_value=200,
         value=25,
+        help="Zalecane ustweienie wartości 25.API NFZ nie lubi innych wartości.",
         step=1
     )
 
