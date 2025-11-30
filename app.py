@@ -295,9 +295,9 @@ def main():
 
     szuk = st.sidebar.text_input(
         "Fragment nazwy świadczenia (benefit):",
-        value="",
+        value=" ",
         placeholder="np. staw, poród, kardio…",
-        help="Wpisz fragment nazwy świadczenia, np. 'rozrodcz', 'poród', 'kardio'."
+        help="Wpisz fragment nazwy świadczenia, np. 'staw', 'poród', 'kardio'."
     )
 
     rok = st.sidebar.number_input(
@@ -313,7 +313,7 @@ def main():
         min_value=1,
         max_value=200,
         value=25,
-        help="Zalecane ustweienie wartości 25.API NFZ nie lubi innych wartości.",
+        help="Zalecane jest nie zwiększanie tej wartości. API NFZ ma z tym problem",
         step=1
     )
 
@@ -481,6 +481,67 @@ def main():
                 f"Liczba unikalnych rekordów ICD-10 (po filtrach): **{len(df_filtr)}**"
             )
             st.dataframe(df_filtr, use_container_width=True)
+
+            # ---------------- WYKRESY (SUMY) ----------------
+            st.markdown("### Wykresy")
+
+            # wybór miary do sumowania
+            numeric_cols = df_filtr.select_dtypes(include="number").columns.tolist()
+
+            if numeric_cols:
+                # zapamiętaj ostatnio wybraną miarę
+                if "chart_metric" not in st.session_state or st.session_state["chart_metric"] not in numeric_cols:
+                    st.session_state["chart_metric"] = numeric_cols[0]
+
+                metric = st.selectbox(
+                    "Wybierz miarę do zsumowania na wykresach:",
+                    options=numeric_cols,
+                    index=numeric_cols.index(st.session_state["chart_metric"]),
+                    help="Wykresy pokażą sumę wybranej miary dla kodów ICD-10 oraz świadczeń (benefit-code)."
+                )
+                st.session_state["chart_metric"] = metric
+
+                col_chart1, col_chart2 = st.columns(2)
+
+                # Wykres 1: suma miary po disease-code
+                with col_chart1:
+                    if "disease-code" in df_filtr.columns:
+                        st.subheader(f"Top kody ICD-10 (suma: {metric})")
+                        top_codes = (
+                            df_filtr.groupby("disease-code")[metric]
+                            .sum()
+                            .sort_values(ascending=True)
+                            .tail(20)
+                        )
+                        if not top_codes.empty:
+                            st.bar_chart(top_codes)
+                        else:
+                            st.caption("Brak danych do wyświetlenia.")
+                    else:
+                        st.caption("Brak kolumny 'disease-code' w danych.")
+
+                # Wykres 2: suma miary po benefit-code
+                with col_chart2:
+                    if "benefit-code" in df_filtr.columns:
+                        st.subheader(f"Suma {metric} wg świadczeń (benefit-code)")
+                        top_benefits = (
+                            df_filtr.groupby("benefit-code")[metric]
+                            .sum()
+                            .sort_values(ascending=True)
+                            .tail(20)
+                        )
+                        if not top_benefits.empty:
+                            st.bar_chart(top_benefits)
+                        else:
+                            st.caption("Brak danych do wyświetlenia.")
+                    else:
+                        st.subheader("Rozkład wg świadczeń")
+                        st.caption("Brak kolumny 'benefit-code' w danych.")
+            else:
+                st.info(
+                    "Brak kolumn numerycznych w danych – nie można zbudować wykresów sum. "
+                    "Sprawdź strukturę danych z NFZ."
+                )
 
             # ---- POBIERANIE CSV / EXCEL ----
             st.markdown("### Pobierz wyniki")
