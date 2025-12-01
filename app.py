@@ -635,7 +635,7 @@ def main():
             "Aplikacja wysyła zapytania do API NFZ (JGP). "
             "Przy większej liczbie świadczeń pobieranie może potrwać kilka–kilkanaście sekund. "
             "Cache skraca czas kolejnych pobrań dla tych samych parametrów, "
-            "a paski postępu pokazują tylko pierwsze, „prawdziwe” pobranie."
+            "a paski postępu pokazują tylko pierwsze, „prawdziwe” pobranie. Autor aplikacji: Krzysztof G."
         )
 
 
