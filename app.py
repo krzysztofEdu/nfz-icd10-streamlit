@@ -296,7 +296,7 @@ def main():
 
     szuk = st.sidebar.text_input(
         "Fragment nazwy świadczenia (benefit):",
-        value="rozrodcz",
+        value="",
         placeholder="np. rozrodcz, poród, kardio…",
         help="Wpisz fragment nazwy świadczenia, np. 'rozrodcz', 'poród', 'kardio'."
     )
@@ -314,6 +314,7 @@ def main():
         min_value=1,
         max_value=200,
         value=25,
+        help="Limity wyników dziają dla wartości poniżej 25",
         step=1
     )
 
